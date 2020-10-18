@@ -1,6 +1,6 @@
-module controller-example
+module daniel.lipovetsky.me/failcontroller
 
-go 1.13
+go 1.15
 
 replace (
 	k8s.io/api => k8s.io/api v0.18.8
@@ -10,6 +10,7 @@ replace (
 )
 
 require (
+	github.com/go-logr/logr v0.1.0
 	github.com/pkg/errors v0.9.1
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
