@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	controllerruntime "sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -29,15 +29,15 @@ var (
 
 func main() {
 	// controllerruntime.SetLogger(zap.New(zap.UseDevMode(true)))
-	controllerruntime.SetLogger(zap.New(zap.UseDevMode(true)))
+	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	mlog := globalLog.WithName("main")
 	mlog.Info("loading kubeconfig")
-	config := controllerruntime.GetConfigOrDie()
+	config := ctrl.GetConfigOrDie()
 
 	var err error
 	mlog.Info("creating manager")
-	mgr, err = controllerruntime.NewManager(config, manager.Options{})
+	mgr, err = ctrl.NewManager(config, manager.Options{})
 	if err != nil {
 		mlog.Error(err, "failed to create manager")
 		os.Exit(1)
@@ -45,7 +45,7 @@ func main() {
 
 	// Create the controller, and register it with the manager
 	mlog.Info("creating controller")
-	if _, err := controllerruntime.NewControllerManagedBy(mgr).
+	if _, err := ctrl.NewControllerManagedBy(mgr).
 		// Reconcile v1beta1.Ingress.
 		For(&v1beta1.Ingress{}).
 		// But include only those with the right annotation
