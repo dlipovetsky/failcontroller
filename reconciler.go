@@ -11,12 +11,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 type FailReconciler struct {
-	Manager manager.Manager
+	Client  client.Client
 	Log     logr.Logger
 	Timeout time.Duration
 }
@@ -31,20 +31,17 @@ func (fr *FailReconciler) Reconcile(r reconcile.Request) (reconcile.Result, erro
 	ctx, cancel := context.WithTimeout(context.Background(), fr.Timeout)
 	defer cancel()
 
-	// Setup API client
-	c := fr.Manager.GetClient()
-
 	// Get the object being reconciled
 	rlog.Info("getting ingress")
 	ing := &extv1beta1.Ingress{}
-	if err := c.Get(ctx, r.NamespacedName, ing); err != nil {
+	if err := fr.Client.Get(ctx, r.NamespacedName, ing); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "unable to get ingress")
 	}
 
 	if ing.Spec.IngressClassName != nil && *ing.Spec.IngressClassName != "" {
 		// Example of non-idempotent behavior:
 		// Every reconcile creates a different ConfigMap.
-		if err := c.Create(ctx, &corev1.ConfigMap{
+		if err := fr.Client.Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%d", *ing.Spec.IngressClassName, rand.Intn(100)),
 				Namespace: ing.Namespace,
@@ -57,7 +54,7 @@ func (fr *FailReconciler) Reconcile(r reconcile.Request) (reconcile.Result, erro
 		// Example of non-reentrant behavior:
 		// The first reconcile creates the ConfigMap. Every subsequent reconcile
 		// fails to create the ConfigMap, because it already exists.
-		if err := c.Create(ctx, &corev1.ConfigMap{
+		if err := fr.Client.Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      *ing.Spec.IngressClassName,
 				Namespace: ing.Namespace,

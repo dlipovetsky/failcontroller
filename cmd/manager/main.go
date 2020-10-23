@@ -55,7 +55,7 @@ func main() {
 		})).
 		// Delegate reconciling to reconcileFunc, defined below
 		Build(&failcontroller.FailReconciler{
-			Manager: mgr,
+			Client:  mgr.GetClient(),
 			Log:     globalLog,
 			Timeout: reconcileTimeout,
 		}); err != nil {
