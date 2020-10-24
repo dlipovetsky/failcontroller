@@ -1,0 +1,7 @@
+apiVersion: example.lipovetsky.me/v1
+kind: Simple
+metadata:
+  name: simple-sample
+spec:
+  # Add fields here
+  foo: bar

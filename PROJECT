@@ -1,0 +1,7 @@
+domain: lipovetsky.me
+repo: daniel.lipovetsky.me/failcontroller
+resources:
+- group: example
+  kind: Simple
+  version: v1
+version: "2"
