@@ -24,6 +24,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,16 +50,21 @@ func (r *SimpleReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	simple := &examplev1.Simple{}
 	if err := r.Get(ctx, req.NamespacedName, simple); err != nil {
+		if kerrors.IsNotFound(err) {
+			log.Info("was deleted")
+			return reconcile.Result{}, nil
+		}
 		log.Error(err, "failed to get")
+		return reconcile.Result{}, err
 	}
 
 	// Example of non-idempotent behavior:
 	// Every reconcile creates a different ConfigMap.
 	if err := r.Create(ctx, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", simple.Name, rand.Intn(100)),
-			Namespace: simple.Namespace,
-			Labels:    map[string]string{KubernetesAppLabel: Name},
+			Name:            fmt.Sprintf("%s-%d", simple.Name, rand.Intn(100)),
+			Namespace:       simple.Namespace,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(simple, examplev1.GroupVersion.WithKind("Simple"))},
 		},
 	}); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create configmap")
@@ -69,9 +75,9 @@ func (r *SimpleReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// fails to create the ConfigMap, because it already exists.
 	if err := r.Create(ctx, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      simple.Name,
-			Namespace: simple.Namespace,
-			Labels:    map[string]string{KubernetesAppLabel: Name},
+			Name:            simple.Name,
+			Namespace:       simple.Namespace,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(simple, examplev1.GroupVersion.WithKind("Simple"))},
 		},
 	}); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create configmap")
